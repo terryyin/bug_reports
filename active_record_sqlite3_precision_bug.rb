@@ -24,11 +24,6 @@ ActiveRecord::Schema.define do
 end
 
 class Post < ActiveRecord::Base
-  has_many :comments
-end
-
-class Comment < ActiveRecord::Base
-  belongs_to :post
 end
 
 class BugTest < Minitest::Test
@@ -42,6 +37,20 @@ class BugTest < Minitest::Test
   end
 
   def test_datetime_precision_is_default_to_nil_for_sqlite
-    post = Post.type_for_attribute('confirmed_at')
+    column = Post.type_for_attribute('confirmed_at')
+
+    # I'm not sure 0 is a good default (it is 0 for mysql),
+    # but being nil cause the above problem
+    assert_equal column.precision, 0
+  end
+
+  def test_adapter_behavior
+    # this is the correct behavior
+    precision = ActiveRecord::Base.connection.send(:extract_precision, 'datetime(6)')
+    assert_equal precision, 6
+
+    # this is probably fixing point
+    precision = ActiveRecord::Base.connection.send(:extract_precision, 'datetime')
+    assert_equal precision, 0
   end
 end
